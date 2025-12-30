@@ -45,6 +45,16 @@ Health check:
 curl http://localhost:8080/api/health
 ```
 
+## Modules and Entry Points
+
+- `mq-ir-model`: IR data model + YAML/JSON IO (no runtime entry).
+- `mq-spec-ingest-excel`: Excel importer that produces IR (library, used by CLI/Web).
+- `mq-codegen`: Java/XML/OpenAPI generators (library, used by CLI/Web).
+- `mq-runtime-converter`: Marshal/unmarshal + codec SPI (library, used by diff/Web).
+- `mq-diff`: Diff engine + HTML report renderer (library, used by CLI/Web).
+- `mq-cli`: CLI entry point `com.rtm.mq.toolkit.cli.MqTool`.
+- `mq-web`: Spring Boot entry point `com.rtm.mq.toolkit.web.MqSchemaToolkitApplication`.
+
 ## Configuration
 
 Default Spring Boot config lives in `mq-web/src/main/resources/application.yml` and can be overridden by environment variables.
@@ -122,14 +132,14 @@ Windows (PowerShell):
 
 ```powershell
 .\mvnw -q -pl mq-cli -am package
-java -cp mq-cli\target\classes;mq-codegen\target\classes;mq-spec-ingest-excel\target\classes;mq-ir-model\target\classes;mq-runtime-converter\target\classes;mq-diff\target\classes com.rtm.mq.cli.MqTool --help
+java -cp mq-cli\target\classes;mq-codegen\target\classes;mq-spec-ingest-excel\target\classes;mq-ir-model\target\classes;mq-runtime-converter\target\classes;mq-diff\target\classes com.rtm.mq.toolkit.cli.MqTool --help
 ```
 
 macOS/Linux:
 
 ```bash
 ./mvnw -q -pl mq-cli -am package
-java -cp mq-cli/target/classes:mq-codegen/target/classes:mq-spec-ingest-excel/target/classes:mq-ir-model/target/classes:mq-runtime-converter/target/classes:mq-diff/target/classes com.rtm.mq.cli.MqTool --help
+java -cp mq-cli/target/classes:mq-codegen/target/classes:mq-spec-ingest-excel/target/classes:mq-ir-model/target/classes:mq-runtime-converter/target/classes:mq-diff/target/classes com.rtm.mq.toolkit.cli.MqTool --help
 ```
 
 ## Example Workflow (sample/create_app.xlsx)
@@ -139,25 +149,25 @@ The `schema-repo-example/` directory is the default baseDir layout.
 1) Import Excel to IR YAML:
 
 ```bash
-java -cp <classpath> com.rtm.mq.cli.MqTool import-excel --excel sample/create_app.xlsx --baseDir schema-repo-example
+java -cp <classpath> com.rtm.mq.toolkit.cli.MqTool import-excel --excel sample/create_app.xlsx --baseDir schema-repo-example
 ```
 
 2) Generate Java POJOs:
 
 ```bash
-java -cp <classpath> com.rtm.mq.cli.MqTool gen-java --baseDir schema-repo-example --basePackage com.rtm.mq.generated
+java -cp <classpath> com.rtm.mq.toolkit.cli.MqTool gen-java --baseDir schema-repo-example --basePackage com.rtm.mq.generated
 ```
 
 3) Generate converter XML:
 
 ```bash
-java -cp <classpath> com.rtm.mq.cli.MqTool gen-xml --baseDir schema-repo-example --basePackage com.rtm.mq.generated
+java -cp <classpath> com.rtm.mq.toolkit.cli.MqTool gen-xml --baseDir schema-repo-example --basePackage com.rtm.mq.generated
 ```
 
 4) Generate OpenAPI:
 
 ```bash
-java -cp <classpath> com.rtm.mq.cli.MqTool gen-openapi --baseDir schema-repo-example
+java -cp <classpath> com.rtm.mq.toolkit.cli.MqTool gen-openapi --baseDir schema-repo-example
 ```
 
 ## Diff Example
@@ -165,7 +175,7 @@ java -cp <classpath> com.rtm.mq.cli.MqTool gen-openapi --baseDir schema-repo-exa
 Given two binary message files and a schema:
 
 ```bash
-java -cp <classpath> com.rtm.mq.cli.MqTool diff --schema schema-repo-example/schemas/SampleOp-response-v1.0.yaml --expected schema-repo-example/messages/expected.bin --actual schema-repo-example/messages/actual.bin --class com.rtm.mq.generated.SampleOpResponse --output schema-repo-example/reports/diff-report.html
+java -cp <classpath> com.rtm.mq.toolkit.cli.MqTool diff --schema schema-repo-example/schemas/SampleOp-response-v1.0.yaml --expected schema-repo-example/messages/expected.bin --actual schema-repo-example/messages/actual.bin --class com.rtm.mq.generated.SampleOpResponse --output schema-repo-example/reports/diff-report.html
 ```
 
 Open the HTML file to view path-level diffs with byte offsets.
