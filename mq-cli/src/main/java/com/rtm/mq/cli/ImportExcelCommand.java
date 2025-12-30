@@ -5,6 +5,7 @@ import com.rtm.mq.ir.GroupIdExtractionConfig;
 import com.rtm.mq.ir.MessageSchema;
 import com.rtm.mq.ir.SchemaIO;
 import com.rtm.mq.ir.YamlConfigIO;
+import com.rtm.mq.spec.excel.ExcelImportConfig;
 import com.rtm.mq.spec.excel.ExcelSchemaImporter;
 import com.rtm.mq.spec.excel.ImportResult;
 import picocli.CommandLine;
@@ -25,7 +26,8 @@ public class ImportExcelCommand extends BaseCommand {
         try {
             ExcelSchemaImporter importer = new ExcelSchemaImporter();
             GroupIdExtractionConfig groupIdConfig = loadGroupIdConfig();
-            ImportResult result = importer.importFile(excelPath, groupIdConfig);
+            ExcelImportConfig importConfig = loadImportConfig();
+            ImportResult result = importer.importFile(excelPath, groupIdConfig, importConfig);
             Path schemaDirPath = resolveSchemaDir();
 
             if (result.request() != null) {
@@ -56,5 +58,13 @@ public class ImportExcelCommand extends BaseCommand {
             return YamlConfigIO.read(configPath, GroupIdExtractionConfig.class);
         }
         return new GroupIdExtractionConfig();
+    }
+
+    private ExcelImportConfig loadImportConfig() throws Exception {
+        Path configPath = resolveConfigDir().resolve("importer.yaml");
+        if (Files.exists(configPath)) {
+            return YamlConfigIO.read(configPath, ExcelImportConfig.class);
+        }
+        return new ExcelImportConfig();
     }
 }

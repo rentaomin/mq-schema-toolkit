@@ -1,0 +1,7 @@
+groupIdFieldName: groupid
+occurrenceFieldName: occurenceCount
+groupIdLength: 10
+occurrenceLength: 4
+byteOrder: BIG_ENDIAN
+groupIdConverter: stringFieldConverter
+occurrenceConverter: counterFieldConverter

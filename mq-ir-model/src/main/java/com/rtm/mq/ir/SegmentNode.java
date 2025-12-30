@@ -3,7 +3,9 @@ package com.rtm.mq.ir;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Segment definition that contains child segments and fields.
@@ -16,6 +18,7 @@ public final class SegmentNode implements SchemaElement {
     private Occurrence occurrence;
     private ProtocolFields protocol;
     private List<SchemaElement> elements = new ArrayList<>();
+    private Map<String, String> extensions = new LinkedHashMap<>();
 
     @Override
     public String getName() {
@@ -64,5 +67,13 @@ public final class SegmentNode implements SchemaElement {
 
     public void setElements(List<SchemaElement> elements) {
         this.elements = elements;
+    }
+
+    public Map<String, String> getExtensions() {
+        return extensions;
+    }
+
+    public void setExtensions(Map<String, String> extensions) {
+        this.extensions = extensions;
     }
 }

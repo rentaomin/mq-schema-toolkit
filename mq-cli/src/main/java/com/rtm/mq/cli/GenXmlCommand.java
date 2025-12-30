@@ -1,10 +1,12 @@
 package com.rtm.mq.cli;
 
 import com.rtm.mq.codegen.ConverterXmlGenerator;
+import com.rtm.mq.codegen.XmlTemplateConfig;
 import com.rtm.mq.ir.ConverterMappingConfig;
 import com.rtm.mq.ir.GenerationReport;
 import com.rtm.mq.ir.GenerationReportIO;
 import com.rtm.mq.ir.MessageSchema;
+import com.rtm.mq.ir.ProtocolConfig;
 import com.rtm.mq.ir.SchemaIO;
 import com.rtm.mq.ir.YamlConfigIO;
 import picocli.CommandLine;
@@ -32,6 +34,8 @@ public class GenXmlCommand extends BaseCommand {
                 return;
             }
             ConverterMappingConfig mapping = loadConverterMapping();
+            ProtocolConfig protocolConfig = loadProtocolConfig();
+            XmlTemplateConfig templateConfig = loadTemplateConfig();
             GenerationReport report = loadReport();
             ConverterXmlGenerator generator = new ConverterXmlGenerator();
             Path outputDir = baseDir.resolve("generated").resolve("xml");
@@ -40,7 +44,8 @@ public class GenXmlCommand extends BaseCommand {
                 boolean inbound = schema.getDirection() != null && schema.getDirection().name().equalsIgnoreCase("RESPONSE");
                 String fileName = inbound ? "mq-response-converters.xml" : "mq-request-converters.xml";
                 ConverterXmlGenerator.MessageContext context =
-                        new ConverterXmlGenerator.MessageContext(schema.getRoot(), basePackage, mapping, report, inbound);
+                        new ConverterXmlGenerator.MessageContext(schema.getRoot(), basePackage, mapping, report, inbound,
+                                protocolConfig, templateConfig);
                 generator.write(context, outputDir.resolve(fileName));
             }
             GenerationReportIO.write(baseDir.resolve("generation-report.json"), report);
@@ -56,6 +61,22 @@ public class GenXmlCommand extends BaseCommand {
             return YamlConfigIO.read(configPath, ConverterMappingConfig.class);
         }
         return new ConverterMappingConfig();
+    }
+
+    private ProtocolConfig loadProtocolConfig() throws Exception {
+        Path configPath = resolveConfigDir().resolve("protocol.yaml");
+        if (Files.exists(configPath)) {
+            return YamlConfigIO.read(configPath, ProtocolConfig.class);
+        }
+        return new ProtocolConfig();
+    }
+
+    private XmlTemplateConfig loadTemplateConfig() throws Exception {
+        Path configPath = resolveConfigDir().resolve("xml-template.yaml");
+        if (Files.exists(configPath)) {
+            return YamlConfigIO.read(configPath, XmlTemplateConfig.class);
+        }
+        return new XmlTemplateConfig();
     }
 
     private GenerationReport loadReport() {

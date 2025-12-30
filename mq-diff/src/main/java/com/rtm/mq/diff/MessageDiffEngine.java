@@ -7,6 +7,7 @@ import com.rtm.mq.ir.SchemaElement;
 import com.rtm.mq.ir.SegmentNode;
 import com.rtm.mq.runtime.ConversionResult;
 import com.rtm.mq.runtime.FieldTrace;
+import com.rtm.mq.runtime.MessageCodec;
 import com.rtm.mq.runtime.MessageConverter;
 
 import java.util.HashMap;
@@ -17,14 +18,14 @@ import java.util.Map;
  * Produces diffs between expected and actual messages.
  */
 public final class MessageDiffEngine {
-    private final MessageConverter converter;
+    private final MessageCodec converter;
     private final ValueTreeBuilder treeBuilder = new ValueTreeBuilder();
 
     public MessageDiffEngine() {
         this(new MessageConverter());
     }
 
-    public MessageDiffEngine(MessageConverter converter) {
+    public MessageDiffEngine(MessageCodec converter) {
         this.converter = converter;
     }
 

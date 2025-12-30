@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * Schema-driven marshal/unmarshal for fixed-length messages.
  */
-public final class MessageConverter {
+public final class MessageConverter implements MessageCodec {
     private final ConversionOptions options;
 
     public MessageConverter() {
@@ -62,7 +62,7 @@ public final class MessageConverter {
         Objects.requireNonNull(type, "type");
 
         ConversionResult<T> result = new ConversionResult<>(instantiate(type));
-        ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes).order(resolveByteOrder());
         readSegmentElements(schema.getRoot(), result.value(), buffer, result, "/" + schema.getRoot().getName());
         return result;
     }
@@ -116,7 +116,9 @@ public final class MessageConverter {
                              ByteBuffer buffer,
                              ConversionResult<?> result,
                              String path) {
-        String groupId = readGroupId(segment, buffer, result, path + "/groupid");
+        String groupIdField = options.getProtocolConfig().getGroupIdFieldName();
+        String occurrenceField = options.getProtocolConfig().getOccurrenceFieldName();
+        String groupId = readGroupId(segment, buffer, result, path + "/" + groupIdField);
         if (segment.getProtocol() != null && segment.getProtocol().getGroupIdValue() != null) {
             String expected = segment.getProtocol().getGroupIdValue();
             if (!expected.equals(groupId)) {
@@ -128,7 +130,7 @@ public final class MessageConverter {
                 }
             }
         }
-        long count = readOccurrenceCount(segment, buffer, result, path + "/occurenceCount");
+        long count = readOccurrenceCount(segment, buffer, result, path + "/" + occurrenceField);
         Occurrence occurrence = segment.getOccurrence() != null ? segment.getOccurrence() : new Occurrence(1, 1);
         if (!occurrence.isRepeating() && count != 1) {
             result.issues().add(new ConversionIssue("WARN", path, "Expected occurenceCount 1 but found " + count));
@@ -151,7 +153,8 @@ public final class MessageConverter {
 
     private String readGroupId(SegmentNode segment, ByteBuffer buffer, ConversionResult<?> result, String path) {
         int start = buffer.position();
-        byte[] data = new byte[10];
+        int length = resolveGroupIdLength(segment);
+        byte[] data = new byte[length];
         buffer.get(data);
         result.traces().add(new FieldTrace(path, start, data.length));
         return decodeString(data);
@@ -159,7 +162,7 @@ public final class MessageConverter {
 
     private void writeGroupId(SegmentNode segment, ByteArrayOutputStream output) {
         String value = segment.getProtocol() != null ? segment.getProtocol().getGroupIdValue() : null;
-        writeString(value, 10, output);
+        writeString(value, resolveGroupIdLength(segment), output);
     }
 
     private long readOccurrenceCount(SegmentNode segment,
@@ -167,18 +170,37 @@ public final class MessageConverter {
                                      ConversionResult<?> result,
                                      String path) {
         int start = buffer.position();
-        long value = Integer.toUnsignedLong(buffer.getInt());
-        result.traces().add(new FieldTrace(path, start, 4));
-        return value;
+        int length = resolveOccurrenceLength(segment);
+        byte[] data = new byte[length];
+        buffer.get(data);
+        result.traces().add(new FieldTrace(path, start, length));
+        if (length == 4) {
+            return Integer.toUnsignedLong(ByteBuffer.wrap(data).order(resolveByteOrder()).getInt());
+        }
+        String text = decodeString(data);
+        if (text == null || text.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(text.trim());
+        } catch (NumberFormatException ex) {
+            result.issues().add(new ConversionIssue("WARN", path, "Invalid occurrence value: " + text));
+            return 0L;
+        }
     }
 
     private void writeOccurrenceCount(long value, ByteArrayOutputStream output) {
         if (value < 0 || value > 0xFFFF_FFFFL) {
             throw new IllegalArgumentException("OccurrenceCount out of range: " + value);
         }
-        ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-        buffer.putInt((int) value);
-        output.writeBytes(buffer.array());
+        int length = resolveOccurrenceLength(null);
+        if (length == 4) {
+            ByteBuffer buffer = ByteBuffer.allocate(4).order(resolveByteOrder());
+            buffer.putInt((int) value);
+            output.writeBytes(buffer.array());
+            return;
+        }
+        writeString(String.valueOf(value), length, output);
     }
 
     private Object readField(FieldNode field,
@@ -198,7 +220,7 @@ public final class MessageConverter {
                 result.issues().add(new ConversionIssue("WARN", path, "Expected 4 bytes for unsigned integer"));
                 return decodeString(data);
             }
-            return Integer.toUnsignedLong(ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).getInt());
+            return Integer.toUnsignedLong(ByteBuffer.wrap(data).order(resolveByteOrder()).getInt());
         }
         return decodeString(data);
     }
@@ -213,7 +235,7 @@ public final class MessageConverter {
             if (number < 0 || number > 0xFFFF_FFFFL) {
                 throw new IllegalArgumentException("Unsigned int out of range for " + field.getName());
             }
-            ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
+            ByteBuffer buffer = ByteBuffer.allocate(4).order(resolveByteOrder());
             buffer.putInt((int) number);
             output.writeBytes(buffer.array());
             return;
@@ -225,6 +247,30 @@ public final class MessageConverter {
     private boolean isBinaryUnsigned(FieldNode field) {
         String datatype = field.getDatatype() != null ? field.getDatatype().toLowerCase() : "";
         return datatype.contains("unsigned") || datatype.contains("integer") || datatype.contains("long");
+    }
+
+    private int resolveGroupIdLength(SegmentNode segment) {
+        if (segment != null && segment.getProtocol() != null && segment.getProtocol().getGroupId() != null
+                && segment.getProtocol().getGroupId().getLengthBytes() != null) {
+            return segment.getProtocol().getGroupId().getLengthBytes();
+        }
+        return options.getProtocolConfig().getGroupIdLength();
+    }
+
+    private int resolveOccurrenceLength(SegmentNode segment) {
+        if (segment != null && segment.getProtocol() != null && segment.getProtocol().getOccurrenceCount() != null
+                && segment.getProtocol().getOccurrenceCount().getLengthBytes() != null) {
+            return segment.getProtocol().getOccurrenceCount().getLengthBytes();
+        }
+        return options.getProtocolConfig().getOccurrenceLength();
+    }
+
+    private ByteOrder resolveByteOrder() {
+        String order = options.getProtocolConfig().getByteOrder();
+        if (order != null && order.equalsIgnoreCase("LITTLE_ENDIAN")) {
+            return ByteOrder.LITTLE_ENDIAN;
+        }
+        return ByteOrder.BIG_ENDIAN;
     }
 
     private String decodeString(byte[] data) {

@@ -1,0 +1,6 @@
+namespace: xxx
+converterTagInbound: fix-length-inbound-converter
+converterTagOutbound: fix-length-outbound-converter
+converterIdInbound: resp_converter
+converterIdOutbound: req_converter
+# templatePath: /path/to/converter-xml.ftl

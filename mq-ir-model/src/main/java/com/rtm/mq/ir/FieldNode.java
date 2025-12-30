@@ -2,6 +2,9 @@ package com.rtm.mq.ir;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Leaf field definition in a schema segment.
  */
@@ -19,6 +22,7 @@ public final class FieldNode implements SchemaElement {
     private String converter;
     private String defaultValue;
     private boolean protocol;
+    private Map<String, String> extensions = new LinkedHashMap<>();
 
     @Override
     public String getName() {
@@ -115,5 +119,13 @@ public final class FieldNode implements SchemaElement {
 
     public void setProtocol(boolean protocol) {
         this.protocol = protocol;
+    }
+
+    public Map<String, String> getExtensions() {
+        return extensions;
+    }
+
+    public void setExtensions(Map<String, String> extensions) {
+        this.extensions = extensions;
     }
 }

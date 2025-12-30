@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GroupIdExtractionConfig {
     private List<String> patterns = new ArrayList<>();
+    private int maxLength = 10;
 
     public List<String> getPatterns() {
         return patterns;
@@ -20,6 +21,14 @@ public class GroupIdExtractionConfig {
 
     public void setPatterns(List<String> patterns) {
         this.patterns = patterns;
+    }
+
+    public int getMaxLength() {
+        return maxLength;
+    }
+
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
     }
 
     /**
@@ -51,8 +60,8 @@ public class GroupIdExtractionConfig {
             return null;
         }
         String token = tokens[0];
-        if (token.length() > 10) {
-            return token.substring(0, 10);
+        if (token.length() > maxLength) {
+            return token.substring(0, maxLength);
         }
         return token;
     }

@@ -2,6 +2,9 @@ package com.rtm.mq.ir;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Top-level schema metadata plus a root segment definition.
  */
@@ -12,6 +15,7 @@ public class MessageSchema {
     private String version;
     private Direction direction;
     private SegmentNode root;
+    private Map<String, String> sharedHeader = new LinkedHashMap<>();
 
     public String getSchemaId() {
         return schemaId;
@@ -51,5 +55,13 @@ public class MessageSchema {
 
     public void setRoot(SegmentNode root) {
         this.root = root;
+    }
+
+    public Map<String, String> getSharedHeader() {
+        return sharedHeader;
+    }
+
+    public void setSharedHeader(Map<String, String> sharedHeader) {
+        this.sharedHeader = sharedHeader;
     }
 }
