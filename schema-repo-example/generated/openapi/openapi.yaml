@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: SampleOp
+  version: "1.0"
+components:
+  schemas:
+    SampleOpRequest:
+      type: object
+      description: request root
+      properties:
+        reqHeader:
+          $ref: "#/components/schemas/ReqHeader"
+      required:
+        - reqHeader
+    ReqHeader:
+      type: object
+      description: Request header
+      properties:
+        accountId:
+          type: string
+          maxLength: 10
+      required:
+        - accountId
+    SampleOpResponse:
+      type: object
+      description: response root
+      properties:
+        respHeader:
+          $ref: "#/components/schemas/RespHeader"
+      required:
+        - respHeader
+    RespHeader:
+      type: object
+      description: Response header
+      properties:
+        accountId:
+          type: string
+          maxLength: 10
+        responseCode:
+          type: string
+          maxLength: 3
+      required:
+        - accountId
+        - responseCode
+paths:
+  /SampleOp:
+    post:
+      operationId: SampleOp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SampleOpRequest"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleOpResponse"

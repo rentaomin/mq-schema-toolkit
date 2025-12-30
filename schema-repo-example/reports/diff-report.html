@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body{font-family:Arial, sans-serif;padding:16px;}
+    table{border-collapse:collapse;width:100%;}
+    th,td{border:1px solid #ccc;padding:6px;vertical-align:top;}
+    th{background:#f3f3f3;}
+    mark{background:#ffef8a;}
+    pre{white-space:pre-wrap;word-break:break-all;}
+  </style>
+</head>
+<body>
+  <h2>Diff Report</h2>
+  <table>
+    <tr><th>Path</th><th>Kind</th><th>Expected</th><th>Actual</th><th>Expected Offset</th><th>Actual Offset</th></tr>
+    <tr>
+      <td>/SampleOpResponse/RespHeader/responseCode</td>
+      <td>MISMATCH</td>
+      <td>001</td>
+      <td>002</td>
+      <td>24:3</td>
+      <td>24:3</td>
+    </tr>
+  </table>
+  <h3>Expected Message</h3>
+  <pre>52 53 50 48 44 20 20 20 20 20 00 00 00 01 41 43 43 31 32 33 20 20 20 20 <mark>30</mark> <mark>30</mark> <mark>31</mark></pre>
+  <h3>Actual Message</h3>
+  <pre>52 53 50 48 44 20 20 20 20 20 00 00 00 01 41 43 43 31 32 33 20 20 20 20 <mark>30</mark> <mark>30</mark> <mark>32</mark></pre>
+</body>
+</html>

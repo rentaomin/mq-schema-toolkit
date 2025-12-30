@@ -1,0 +1,14 @@
+{
+  "groupIds": [
+    {
+      "segmentPath": "/SampleOpRequest/ReqHeader",
+      "groupIdValue": "REQHDR"
+    },
+    {
+      "segmentPath": "/SampleOpResponse/RespHeader",
+      "groupIdValue": "RSPHDR"
+    }
+  ],
+  "fallbackConverters": [],
+  "issues": []
+}

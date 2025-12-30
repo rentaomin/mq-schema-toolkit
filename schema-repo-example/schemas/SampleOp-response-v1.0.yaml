@@ -1,0 +1,45 @@
+schemaId: SampleOp:response:v1.0
+operationId: SampleOp
+version: "1.0"
+direction: RESPONSE
+root:
+  name: SampleOpResponse
+  originalName: SampleOp
+  description: response root
+  elements:
+    - kind: segment
+      name: RespHeader
+      originalName: RespHeader
+      description: Response header
+      occurrence:
+        minOccurs: 1
+        maxOccurs: 1
+      protocol:
+        groupIdValue: RSPHDR
+        groupId:
+          name: groupid
+          originalName: groupid
+          lengthBytes: 10
+          datatype: String
+          required: true
+          protocol: true
+        occurrenceCount:
+          name: occurenceCount
+          originalName: occurenceCount
+          lengthBytes: 4
+          datatype: Unsigned Integer
+          required: true
+          protocol: true
+      elements:
+        - kind: field
+          name: accountId
+          originalName: accountId
+          lengthBytes: 10
+          datatype: String
+          required: true
+        - kind: field
+          name: responseCode
+          originalName: responseCode
+          lengthBytes: 3
+          datatype: String
+          required: true

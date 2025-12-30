@@ -1,0 +1,8 @@
+datatypeConverters:
+  String: stringFieldConverter
+  Unsigned Integer: counterFieldConverter
+  Unsigned Long: stringFieldConverter
+  Currency Amount: OHcurrencyamountFieldConverter
+fieldOverrides:
+  occurenceCount: counterFieldConverter
+fallbackConverter: stringFieldConverter

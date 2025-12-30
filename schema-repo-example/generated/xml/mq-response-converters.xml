@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="xxx">
+  <fix-length-inbound-converter id="resp_converter" codeGen="true">
+    <message forType="com.rtm.mq.generated.SampleOpResponse">
+      <field type="DataField" length="10" fixedLength="true" transitory="true" defaultValue="RSPHDR" converter="stringFieldConverter" />
+      <field type="DataField" length="4" fixedLength="true" transitory="true" converter="counterFieldConverter" />
+      <field name="respHeader" type="CompositeField" forType="com.rtm.mq.generated.RespHeader">
+        <field name="accountId" type="DataField" length="10" fixedLength="true" nullPad=" " converter="stringFieldConverter" />
+        <field name="responseCode" type="DataField" length="3" fixedLength="true" nullPad=" " converter="stringFieldConverter" />
+      </field>
+    </message>
+  </fix-length-inbound-converter>
+</beans:beans>
