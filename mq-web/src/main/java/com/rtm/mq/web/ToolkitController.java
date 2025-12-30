@@ -2,9 +2,12 @@ package com.rtm.mq.web;
 
 import com.rtm.mq.spec.excel.ImportResult;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.Map;
 
 /**
@@ -39,6 +42,33 @@ public class ToolkitController {
                 "requestSchemaId", result.request() != null ? result.request().getSchemaId() : null,
                 "responseSchemaId", result.response() != null ? result.response().getSchemaId() : null
         ));
+    }
+
+    @PostMapping(path = "/import-excel-file", consumes = "multipart/form-data")
+    public ResponseEntity<?> importExcelFile(@RequestParam("file") MultipartFile file,
+                                             @RequestParam(value = "baseDir", required = false) String baseDirParam,
+                                             @RequestParam(value = "schemaDir", required = false) String schemaDirParam)
+            throws Exception {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "file is required"));
+        }
+        long maxBytes = properties.getMaxUploadSizeMb() * 1024L * 1024L;
+        if (file.getSize() > maxBytes) {
+            return ResponseEntity.badRequest().body(Map.of("error", "file too large", "maxMb", properties.getMaxUploadSizeMb()));
+        }
+        Path baseDir = baseDirOrDefault(baseDirParam);
+        Path schemaDir = schemaDirOrDefault(baseDir, schemaDirParam);
+        Path tempFile = Files.createTempFile("mqtool-", ".xlsx");
+        try {
+            file.transferTo(tempFile);
+            ImportResult result = service.importExcel(tempFile, baseDir, schemaDir);
+            return ResponseEntity.ok(Map.of(
+                    "requestSchemaId", result.request() != null ? result.request().getSchemaId() : null,
+                    "responseSchemaId", result.response() != null ? result.response().getSchemaId() : null
+            ));
+        } finally {
+            Files.deleteIfExists(tempFile);
+        }
     }
 
     @PostMapping("/gen-java")

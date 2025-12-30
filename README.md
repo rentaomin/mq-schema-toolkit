@@ -72,6 +72,14 @@ curl -X POST http://localhost:8080/api/import-excel ^
   -d "{\"excelPath\":\"sample/create_app.xlsx\",\"baseDir\":\"schema-repo-example\"}"
 ```
 
+Import Excel (file upload, up to 50MB):
+
+```bash
+curl -X POST http://localhost:8080/api/import-excel-file ^
+  -F "file=@sample/create_app.xlsx" ^
+  -F "baseDir=schema-repo-example"
+```
+
 Generate Java:
 
 ```bash

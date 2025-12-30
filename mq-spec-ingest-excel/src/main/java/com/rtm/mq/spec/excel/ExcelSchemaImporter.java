@@ -16,6 +16,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +46,7 @@ public final class ExcelSchemaImporter {
         Objects.requireNonNull(excelPath, "excelPath");
         GenerationReport report = new GenerationReport();
         ExcelImportConfig config = importConfig != null ? importConfig : defaultConfig();
+        configurePoiSecurity();
 
         try (InputStream input = Files.newInputStream(excelPath);
              Workbook workbook = WorkbookFactory.create(input)) {
@@ -410,12 +412,16 @@ public final class ExcelSchemaImporter {
         return true;
     }
 
-    private String cellText(Cell cell) {
+    private static String cellText(Cell cell) {
         if (cell == null) {
             return null;
         }
-        String value = DATA_FORMATTER.formatCellValue(cell);
-        return value != null ? value.trim() : null;
+        try {
+            String value = DATA_FORMATTER.formatCellValue(cell);
+            return sanitize(value);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private Integer parseInt(String value) {
@@ -524,5 +530,28 @@ public final class ExcelSchemaImporter {
     private ExcelImportConfig defaultConfig() {
         ExcelImportConfig config = new ExcelImportConfig();
         return config;
+    }
+
+    private void configurePoiSecurity() {
+        ZipSecureFile.setMinInflateRatio(0.01d);
+        ZipSecureFile.setMaxEntrySize(200L * 1024 * 1024);
+        ZipSecureFile.setMaxTextSize(200L * 1024 * 1024);
+    }
+
+    private static String sanitize(String value) {
+        if (value == null) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t') {
+                builder.append(' ');
+            } else {
+                builder.append(c);
+            }
+        }
+        String cleaned = builder.toString().trim();
+        return cleaned.isEmpty() ? null : cleaned;
     }
 }

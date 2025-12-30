@@ -14,6 +14,7 @@ public class ToolkitProperties {
     private ProtocolConfig protocol = new ProtocolConfig();
     private String xmlTemplatePath;
     private String groupIdMode = "STRICT";
+    private int maxUploadSizeMb = 50;
 
     public String getBaseDir() {
         return baseDir;
@@ -61,5 +62,13 @@ public class ToolkitProperties {
 
     public void setGroupIdMode(String groupIdMode) {
         this.groupIdMode = groupIdMode;
+    }
+
+    public int getMaxUploadSizeMb() {
+        return maxUploadSizeMb;
+    }
+
+    public void setMaxUploadSizeMb(int maxUploadSizeMb) {
+        this.maxUploadSizeMb = maxUploadSizeMb;
     }
 }
