@@ -235,11 +235,13 @@ public final class ExcelSchemaImporter {
             String trimmedFieldName = fieldName != null ? fieldName.trim() : "";
             boolean isSegmentRow = (lengthRaw == null || lengthRaw.isBlank()) && (datatype == null || datatype.isBlank());
 
+            SegmentNode currentParent;
             if (isSegmentRow) {
                 SegmentNode segment = new SegmentNode();
                 String segmentToken = trimmedFieldName;
                 if (segmentToken.contains(":")) {
-                    segmentToken = segmentToken.split(":", 2)[1];
+                    String[] parts = segmentToken.split(":", 2);
+                    segmentToken = parts[parts.length - 1];
                 }
                 segment.setName(NameUtils.toUpperCamel(segmentToken));
                 segment.setOriginalName(trimmedFieldName);
@@ -254,8 +256,13 @@ public final class ExcelSchemaImporter {
                 SegmentNode parent = stack.get(segLevel - 1);
                 parent.getElements().add(segment);
                 stack.add(segment);
+                currentParent = segment;
             } else {
-                SegmentNode current = stack.get(stack.size() - 1);
+                adjustStack(stack, segLevel, report);
+                currentParent = stack.get(stack.size() - 1);
+            }
+
+            if (!isSegmentRow) {
                 if (matchesConfig(trimmedFieldName, config.getGroupIdFieldNames())) {
                     FieldNode groupId = buildFieldNode(trimmedFieldName, description, lengthRaw, datatype, opt, nullableRaw, sample);
                     groupId.setProtocol(true);
@@ -267,24 +274,26 @@ public final class ExcelSchemaImporter {
                         groupIdValue = groupIdValue.trim();
                     }
                     groupId.setDefaultValue(groupIdValue);
-                    current.getProtocol().setGroupId(groupId);
-                    current.getProtocol().setGroupIdValue(groupIdValue);
+                    currentParent.getProtocol().setGroupId(groupId);
+                    currentParent.getProtocol().setGroupIdValue(groupIdValue);
                     report.addGroupId(buildSegmentPath(stack), groupIdValue);
+                    currentParent.getElements().add(groupId);
                 } else if (matchesConfig(trimmedFieldName, config.getOccurrenceFieldNames())) {
                     FieldNode occurrenceCount = buildFieldNode(trimmedFieldName, description, lengthRaw, datatype, opt, nullableRaw, sample);
                     occurrenceCount.setProtocol(true);
                     if (!extras.isEmpty()) {
                         occurrenceCount.getExtensions().putAll(extras);
                     }
-                    current.getProtocol().setOccurrenceCount(occurrenceCount);
+                    currentParent.getProtocol().setOccurrenceCount(occurrenceCount);
                     Occurrence occurrence = parseOccurrence(description);
                     if (occurrence != null) {
-                        current.setOccurrence(occurrence);
+                        currentParent.setOccurrence(occurrence);
                     }
+                    currentParent.getElements().add(occurrenceCount);
                 } else {
                     FieldNode field = buildFieldNode(trimmedFieldName, description, lengthRaw, datatype, opt, nullableRaw, sample);
                     applyExtrasToField(field, extras);
-                    current.getElements().add(field);
+                    currentParent.getElements().add(field);
                 }
             }
         }
