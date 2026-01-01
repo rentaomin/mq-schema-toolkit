@@ -10,6 +10,7 @@ import com.rtm.mq.toolkit.ir.Occurrence;
 import com.rtm.mq.toolkit.ir.ProtocolFields;
 import com.rtm.mq.toolkit.ir.SchemaElement;
 import com.rtm.mq.toolkit.ir.SegmentNode;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -194,7 +195,8 @@ public final class ExcelSchemaImporter {
 
         boolean started = false;
         int emptyStreak = 0;
-        for (int rowIndex = mapping.headerRow + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+        int lastDataRow = findLastDataRow(sheet, mapping);
+        for (int rowIndex = mapping.headerRow + 1; rowIndex <= lastDataRow; rowIndex++) {
             Row row = sheet.getRow(rowIndex);
             if (row == null) {
                 continue;
@@ -209,10 +211,11 @@ public final class ExcelSchemaImporter {
             String sample = cellText(row.getCell(mapping.columnIndex.get(ColumnKey.SAMPLE)));
             Map<String, String> extras = mapping.extractExtras(row);
 
-            if (isEmptyRow(segLevelRaw, fieldName, description, lengthRaw, datatype, opt, nullableRaw, sample)) {
+            if (isEmptyRow(segLevelRaw, fieldName, description, lengthRaw, datatype, opt, nullableRaw, sample)
+                    && extras.isEmpty()) {
                 if (started) {
                     emptyStreak++;
-                    if (emptyStreak >= 2) {
+                    if (emptyStreak >= config.getMaxConsecutiveEmptyRows()) {
                         break;
                     }
                 }
@@ -280,9 +283,7 @@ public final class ExcelSchemaImporter {
                     }
                 } else {
                     FieldNode field = buildFieldNode(trimmedFieldName, description, lengthRaw, datatype, opt, nullableRaw, sample);
-                    if (!extras.isEmpty()) {
-                        field.getExtensions().putAll(extras);
-                    }
+                    applyExtrasToField(field, extras);
                     current.getElements().add(field);
                 }
             }
@@ -322,6 +323,36 @@ public final class ExcelSchemaImporter {
         }
         field.setExample(sample);
         return field;
+    }
+
+    private void applyExtrasToField(FieldNode field, Map<String, String> extras) {
+        if (extras.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : extras.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            String normalized = normalizeHeader(key);
+            if (normalized.contains("hardcode") || normalized.contains("hardcodevalue")) {
+                if (value != null && value.equalsIgnoreCase("BLANK") && field.getLengthBytes() != null) {
+                    field.setDefaultValue(" ".repeat(field.getLengthBytes()));
+                } else {
+                    field.setDefaultValue(value);
+                }
+            } else if (normalized.contains("testvalue") || normalized.contains("sample")) {
+                if (field.getExample() == null) {
+                    field.setExample(value);
+                }
+            } else if (normalized.contains("nls")) {
+                field.getExtensions().put(key, value);
+            } else if (normalized.contains("refid") || normalized.contains("comments") || normalized.contains("remarks")) {
+                field.getExtensions().put(key, value);
+            } else if (normalized.contains("smpfield")) {
+                field.getExtensions().put(key, value);
+            } else {
+                field.getExtensions().put(key, value);
+            }
+        }
     }
 
     private Occurrence parseOccurrence(String description) {
@@ -388,11 +419,11 @@ public final class ExcelSchemaImporter {
                     headers.put(cell.getColumnIndex(), rawHeader.trim());
                 }
             }
-            if (columns.keySet().containsAll(ColumnKey.required())) {
+            if (columns.keySet().containsAll(requiredColumns(config))) {
                 return new HeaderMapping(rowIndex, columns, headers, config.isCaptureExtraColumns());
             }
         }
-        throw new IllegalStateException("Missing required columns: " + ColumnKey.required());
+        throw new IllegalStateException("Missing required columns: " + requiredColumns(config));
     }
 
     private String buildSegmentPath(List<SegmentNode> stack) {
@@ -410,6 +441,29 @@ public final class ExcelSchemaImporter {
             }
         }
         return true;
+    }
+
+    private int findLastDataRow(Sheet sheet, HeaderMapping mapping) {
+        int last = mapping.headerRow + 1;
+        for (int i = sheet.getLastRowNum(); i >= mapping.headerRow + 1; i--) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+            boolean hasValue = false;
+            for (Cell cell : row) {
+                String v = cellText(cell);
+                if (v != null && !v.isBlank()) {
+                    hasValue = true;
+                    break;
+                }
+            }
+            if (hasValue) {
+                last = i;
+                break;
+            }
+        }
+        return last;
     }
 
     private static String cellText(Cell cell) {
@@ -479,11 +533,8 @@ public final class ExcelSchemaImporter {
         DATATYPE,
         OPT,
         NULLABLE,
+        NLS,
         SAMPLE;
-
-        private static List<ColumnKey> required() {
-            return List.of(SEG_LVL, FIELD_NAME, DESCRIPTION, LENGTH, DATATYPE, OPT, NULLABLE, SAMPLE);
-        }
 
         private static ColumnKey fromKey(String key) {
             if (key == null) {
@@ -497,6 +548,7 @@ public final class ExcelSchemaImporter {
                 case "messagingdatatype", "datatype" -> DATATYPE;
                 case "optom", "opt" -> OPT;
                 case "null", "nullyn", "nullable" -> NULLABLE;
+                case "nls" -> NLS;
                 case "samplevalues", "samplevalue", "sample" -> SAMPLE;
                 default -> null;
             };
@@ -521,6 +573,7 @@ public final class ExcelSchemaImporter {
         synonyms.put("null", ColumnKey.NULLABLE);
         synonyms.put("nullyn", ColumnKey.NULLABLE);
         synonyms.put("nullable", ColumnKey.NULLABLE);
+        synonyms.put("nls", ColumnKey.NLS);
         synonyms.put("samplevalues", ColumnKey.SAMPLE);
         synonyms.put("samplevalue", ColumnKey.SAMPLE);
         synonyms.put("sample", ColumnKey.SAMPLE);
@@ -530,6 +583,22 @@ public final class ExcelSchemaImporter {
     private ExcelImportConfig defaultConfig() {
         ExcelImportConfig config = new ExcelImportConfig();
         return config;
+    }
+
+    private List<ColumnKey> requiredColumns(ExcelImportConfig config) {
+        List<ColumnKey> defaults = List.of(ColumnKey.SEG_LVL, ColumnKey.FIELD_NAME, ColumnKey.DESCRIPTION,
+                ColumnKey.LENGTH, ColumnKey.DATATYPE, ColumnKey.OPT, ColumnKey.NULLABLE, ColumnKey.NLS);
+        if (config.getRequiredColumns() == null || config.getRequiredColumns().isEmpty()) {
+            return defaults;
+        }
+        List<ColumnKey> result = new ArrayList<>();
+        for (String name : config.getRequiredColumns()) {
+            ColumnKey key = ColumnKey.fromKey(name);
+            if (key != null) {
+                result.add(key);
+            }
+        }
+        return result.isEmpty() ? defaults : result;
     }
 
     private void configurePoiSecurity() {
