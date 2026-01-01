@@ -236,7 +236,7 @@ public final class ExcelSchemaImporter {
                 SegmentNode segment = new SegmentNode();
                 String segmentToken = trimmedFieldName;
                 if (segmentToken.contains(":")) {
-                    segmentToken = segmentToken.split(":", 2)[0];
+                    segmentToken = segmentToken.split(":", 2)[1];
                 }
                 segment.setName(NameUtils.toUpperCamel(segmentToken));
                 segment.setOriginalName(trimmedFieldName);
