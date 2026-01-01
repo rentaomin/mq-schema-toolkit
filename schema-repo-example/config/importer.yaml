@@ -3,7 +3,7 @@ headerValueScanLimit: 30
 captureExtraColumns: true
 # groupIdFieldNames: ["groupid"]
 # occurrenceFieldNames: ["occurenceCount", "occurrenceCount"]
-requiredColumns: ["SEG_LVL", "FIELD_NAME", "DESCRIPTION", "LENGTH", "DATATYPE", "OPT", "NULLABLE", "NLS"]
+requiredColumns: ["SEG_LVL", "FIELD_NAME", "DESCRIPTION", "LENGTH", "DATATYPE"]
 maxConsecutiveEmptyRows: 5
 # columnAliases:
 #   segLvl: ["Seg lvl", "Segment Level"]

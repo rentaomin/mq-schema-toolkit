@@ -17,7 +17,7 @@ public class ExcelImportConfig {
     private boolean captureExtraColumns = true;
     private List<String> groupIdFieldNames = List.of("groupid");
     private List<String> occurrenceFieldNames = List.of("occurenceCount", "occurrenceCount");
-    private List<String> requiredColumns = List.of("SEG_LVL", "FIELD_NAME", "DESCRIPTION", "LENGTH", "DATATYPE", "OPT", "NULLABLE", "NLS");
+    private List<String> requiredColumns = List.of("SEG_LVL", "FIELD_NAME", "DESCRIPTION", "LENGTH", "DATATYPE");
     private int maxConsecutiveEmptyRows = 5;
 
     public Map<String, List<String>> getColumnAliases() {

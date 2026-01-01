@@ -586,8 +586,13 @@ public final class ExcelSchemaImporter {
     }
 
     private List<ColumnKey> requiredColumns(ExcelImportConfig config) {
-        List<ColumnKey> defaults = List.of(ColumnKey.SEG_LVL, ColumnKey.FIELD_NAME, ColumnKey.DESCRIPTION,
-                ColumnKey.LENGTH, ColumnKey.DATATYPE, ColumnKey.OPT, ColumnKey.NULLABLE, ColumnKey.NLS);
+        List<ColumnKey> defaults = List.of(
+                ColumnKey.SEG_LVL,
+                ColumnKey.FIELD_NAME,
+                ColumnKey.DESCRIPTION,
+                ColumnKey.LENGTH,
+                ColumnKey.DATATYPE
+        );
         if (config.getRequiredColumns() == null || config.getRequiredColumns().isEmpty()) {
             return defaults;
         }
